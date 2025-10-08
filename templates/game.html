@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Games{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="dictionary-content" id="dictionary-content">
+        {% if is_offline %}
+        <div class="offline-warning">
+            <i class="fas fa-wifi-slash"></i>
+            <h3>Anda sedang offline</h3>
+            <p>Fitur Game membutuhkan koneksi internet. Harap hubungkan perangkat Anda ke internet.</p>
+        </div>
+        {% else %}
+        
+        <h2>Pilih Permainan</h2>
+        
+        <div class="game-grid">
+            <div class="game-card" id="ayatGuesserCard">
+                <div class="game-icon">
+                    <i class="fas fa-headphones-alt"></i>
+                </div>
+                <h3>Tebak Ayat</h3>
+                <p>Dengarkan lantunan ayat suci dan tebak surat serta nomor ayatnya.</p>
+            </div>
+
+            <div class="game-card disabled" onclick="alert('Fitur ini sedang dalam pengembangan.')">
+                <div class="game-icon" style="background-color: rgba(251, 188, 5, 0.1); color: var(--accent-yellow);">
+                    <i class="fas fa-question"></i>
+                </div>
+                <h3>Kuis Islam</h3>
+                <p>Uji pengetahuan keislaman Anda dengan berbagai pertanyaan menarik.</p>
+            </div>
+        </div>
+
+        <div id="gameConfigModal" class="modal-overlay">
+            <div class="modal-content" style="text-align: left;">
+                <h3 style="text-align: center;">Konfigurasi Tebak Ayat</h3>
+                
+                <div class="config-form-group">
+                    <label>Mode Permainan</label>
+                    <div class="mode-toggle">
+                        <label class="radio-container">Per Surat
+                            <input type="radio" name="gameMode" value="surah" checked>
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="radio-container">Per Juz
+                            <input type="radio" name="gameMode" value="juz">
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-form-group" id="surahSelectGroup">
+                    <label>Pilih Surat</label>
+                    <div class="select-wrapper">
+                        <select id="gameSurahSelect" class="config-select">
+                            <option value="all">Semua Surat (Acak)</option>
+                            {% for surah in surah_list %}
+                            <option value="{{ surah.nomor }}">{{ surah.nomor }}. {{ surah.namaLatin }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-form-group" id="juzSelectGroup" style="display: none;">
+                    <label>Pilih Juz</label>
+                    <div class="select-wrapper">
+                        <select id="gameJuzSelect" class="config-select">
+                            {% for i in range(1, 31) %}
+                            <option value="{{ i }}">Juz {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-form-group">
+                    <label>Pilih Qari</label>
+                    <div class="select-wrapper">
+                        <select id="gameQariSelect" class="config-select">
+                            {% for key, qari in qari_list.items() %}
+                            <option value="{{ key }}" {% if key == default_qari %}selected{% endif %}>{{ qari.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-form-group">
+                    <label>Jumlah Soal</label>
+                    <div class="select-wrapper">
+                        <select id="gameAmountSelect" class="config-select">
+                            <option value="5">5 Soal</option>
+                            <option value="10">10 Soal</option>
+                            <option value="20">20 Soal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="cancelGameBtn" class="modal-btn secondary">Batal</button>
+                    <button id="startGameBtn" class="modal-btn primary">Mulai Main</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}

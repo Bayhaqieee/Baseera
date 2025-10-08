@@ -1,0 +1,30 @@
+use_default_settings: true
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  # Make sure you have generated and pasted your secret key here
+  secret_key: "09a3d7ac9a03e6841bf3ed8b669858676aa0c43db7c8fdf9dd6330b319919a66"
+  public_instance: false
+  limiter: false
+
+search:
+  safe_search: 1
+  language: "en"
+  formats:
+    - html
+    - json
+
+# UPDATED: Using more scraper-friendly search engines to avoid 403 errors
+engines:
+  - name: duckduckgo
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: wikipedia
+    disabled: false
+
+botdetection:
+  enabled: false

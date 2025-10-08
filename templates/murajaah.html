@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Murajaah{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="dictionary-content" id="dictionary-content">
+        {% if is_offline %}
+        <div class="offline-warning">
+            <i class="fas fa-wifi-slash"></i>
+            <h3>Anda sedang offline</h3>
+            <p>Fitur Murajaah membutuhkan koneksi internet untuk streaming audio. Harap hubungkan perangkat Anda ke internet dan coba lagi.</p>
+        </div>
+        {% else %}
+        <div class="murajaah-card">
+            <div class="card-header">
+                <h3>Daftar Qari</h3>
+            </div>
+            <div class="card-body">
+                <div class="qari-selector">
+                    <img src="{{ url_for('static', filename=qari_list[default_qari].image) }}" alt="Qari" id="qariImage" class="qari-image">
+                    
+                    <select id="qariSelect" class="qari-dropdown">
+                        {% for key, qari in qari_list.items() %}
+                        <option 
+                            value="{{ key }}" 
+                            {% if key == default_qari %}selected{% endif %}
+                            data-image-src="{{ url_for('static', filename=qari.image) }}">
+                            {{ qari.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="murajaah-card">
+            <div class="card-header">
+                <h3>Daftar Surat</h3>
+            </div>
+            <div class="card-body">
+                <input type="text" id="surahSearchInput" class="murajaah-search" placeholder="Cari surat...">
+                <div class="surah-list-container" id="surahListContainer">
+                    {% for surah in surah_list %}
+                    <a href="{{ url_for('murajaah_detail_page', surah_id=surah.nomor) }}" class="list-card surah-select-card" data-nama-latin="{{ surah.namaLatin.lower() }}" data-nomor="{{ surah.nomor }}">
+                        
+                        <div class="surah-list-number">
+                            <span>{{ surah.nomor }}</span>
+                        </div>
+
+                        <div class="surah-list-info">
+                            <h3>{{ surah.namaLatin }}</h3>
+                            <span class="revelation-place">{{ surah.arti }} &bull; {{ surah.tempatTurun }}</span>
+                        </div>
+
+                        <div class="surah-list-arabic">
+                             <span class="arabic-surah-name">{{ surah.nama }}</span>
+                        </div>
+
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/murajaah.js') }}"></script>
+{% endblock %}

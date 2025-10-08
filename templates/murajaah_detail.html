@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Murajaah {{ surah.namaLatin }}{% endblock %}
+{% block content %}
+<div class="dictionary-container murajaah-detail-container">
+    <div class="breadcrumbs">
+        <a href="{{ url_for('murajaah_page') }}">Murajaah</a> &gt;
+        <span>{{ surah.namaLatin }}</span>
+    </div>
+
+    <div class="murajaah-header">
+        <div class="header-info">
+            <h1>{{ surah.namaLatin }}</h1>
+            <span class="qari-name">Qari: {{ qari_name }}</span>
+        </div>
+        <div class="autoplay-control">
+            <label class="switch">
+                <input type="checkbox" id="autoplaySwitch">
+                <span class="slider round"></span>
+            </label>
+            <span class="switch-label">Autoplay</span>
+        </div>
+    </div>
+
+    <audio id="murajaahAudioPlayer"></audio>
+    
+    <div class="dictionary-content murajaah-text-content" id="murajaahTextContent">
+        <div class="murajaah-arabic-text">
+            {{ full_arabic_text|safe }}
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="surah-navigation">
+            {% if surah.prev_surah %}
+            <a href="{{ url_for('murajaah_detail_page', surah_id=surah.prev_surah.nomor, qari=current_qari) }}" class="nav-card prev-card">
+                <i class="fas fa-chevron-left"></i>
+                <div class="nav-info">
+                    <span class="nav-label">Previous</span>
+                    <span class="nav-surah">{{ surah.prev_surah.namaLatin }}</span>
+                </div>
+            </a>
+            {% else %}
+            <div class="nav-placeholder"></div>
+            {% endif %}
+
+            {% if surah.next_surah %}
+            <a href="{{ url_for('murajaah_detail_page', surah_id=surah.next_surah.nomor, qari=current_qari) }}" class="nav-card next-card">
+                <div class="nav-info">
+                    <span class="nav-label">Next</span>
+                    <span class="nav-surah">{{ surah.next_surah.namaLatin }}</span>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% else %}
+            <div class="nav-placeholder"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="nextSurahModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Next Surah</h3>
+            <p>Moving to the next Surah in <span id="countdownTimer">10</span> seconds...</p>
+            <div class="modal-actions">
+                <button id="stayButton" class="modal-btn secondary">Stay</button>
+                <button id="continueButton" class="modal-btn primary">Continue</button>
+            </div>
+        </div>
+    </div>
+    
+    <input type="hidden" id="nextSurahId" value="{{ next_surah_id }}">
+    <input type="hidden" id="currentQari" value="{{ current_qari }}">
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/murajaah.js') }}"></script>
+{% endblock %}

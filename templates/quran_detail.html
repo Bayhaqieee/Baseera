@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - {{ surah.namaLatin }}{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="breadcrumbs">
+        <a href="{{ url_for('quran_page') }}">Quran</a> &gt;
+        <span>{{ surah.namaLatin }}</span>
+    </div>
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search ayat number or translation...">
+        <div id="searchError" class="search-error-message"></div>
+    </div>
+    
+    <div class="dictionary-content quran-detail-content" id="dictionary-content">
+        <div class="quran-detail-header-card">
+            <h1>{{ surah.namaLatin }}</h1>
+            {% if surah.arti %}<h2>{{ surah.arti }}</h2>{% endif %}
+            <span class="header-meta">{{ surah.tempatTurun }} &bull; {{ surah.jumlahAyat }} Ayat</span>
+            <h1 class="arabic-surah-name-header">{{ surah.nama }}</h1>
+
+            {% if surah.deskripsi %}
+            <details class="surah-description-details">
+                <summary>
+                    <span>Tentang Surat</span>
+                    <i class="fas fa-chevron-down"></i>
+                </summary>
+                <div class="description-body">
+                    {{ surah.deskripsi|safe }}
+                </div>
+            </details>
+            {% endif %}
+        </div>
+        
+        <div class="separator"></div>
+
+        <div id="noResultsMessage" class="no-results-message"></div>
+
+        <audio id="audioPlayer"></audio>
+
+        {% for verse in surah.ayat %}
+        <div class="dictionary-card quran-card verse-card">
+            <div class="card-body verse-body">
+                <div class="verse-header">
+                    <span class="verse-number">{{ verse.nomorAyat }}</span>
+                    <div class="verse-actions">
+                        {% if verse.audio and verse.audio['05'] %}
+                        <i class="fas fa-play-circle play-button" data-audio-src="{{ verse.audio['05'] }}"></i>
+                        {% else %}
+                        <i class="fas fa-play-circle" style="opacity: 0.3; cursor: default;"></i>
+                        {% endif %}
+                        <i class="fas fa-copy copy-button"></i>
+                    </div>
+                </div>
+                <div class="verse-item" data-ayat-number="{{ verse.nomorAyat }}">
+                    <p class="arabic-text">{{ verse.teksArab }}</p>
+                    <p class="latin-text">{{ verse.teksLatin }}</p>
+                    <p class="translation-text">{{ verse.teksIndonesia }}</p>
+                </div>
+            </div>
+        </div>
+         {% if not loop.last %}
+            <div class="separator verse-separator"></div>
+         {% endif %}
+        {% endfor %}
+
+        <div class="separator"></div>
+
+        <div class="surah-navigation">
+            {% if surah.prev_surah %}
+            <a href="{{ url_for('quran_detail_page', surah_id=surah.prev_surah.nomor) }}" class="nav-card prev-card">
+                <i class="fas fa-chevron-left"></i>
+                <div class="nav-info">
+                    <span class="nav-label">Previous</span>
+                    <span class="nav-surah">{{ surah.prev_surah.namaLatin }}</span>
+                </div>
+            </a>
+            {% else %}
+            <div class="nav-placeholder"></div>
+            {% endif %}
+
+            {% if surah.next_surah %}
+            <a href="{{ url_for('quran_detail_page', surah_id=surah.next_surah.nomor) }}" class="nav-card next-card">
+                <div class="nav-info">
+                    <span class="nav-label">Next</span>
+                    <span class="nav-surah">{{ surah.next_surah.namaLatin }}</span>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% else %}
+            <div class="nav-placeholder"></div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quran_search.js') }}"></script>
+{% endblock %}

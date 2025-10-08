@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Chatbot{% endblock %}
+{% block content %}
+<div class="chat-container">
+    <div class="chat-area" id="chat-area">
+        <!-- Welcome Message with new alignment wrapper -->
+        <div class="ai-message-wrapper">
+             <div class="message-wrapper">
+                <div class="message-header ai-header"><i class="fas fa-robot"></i> AI Team</div>
+                <div class="ai-response"><p>Assalamualaikum! How can I help you?</p></div>
+            </div>
+        </div>
+        <!-- Dynamic chat messages will be inserted here -->
+    </div>
+    <div class="input-container">
+        <div class="prompt-suggestions-wrapper" id="prompt-suggestions-wrapper" style="display: none;">
+            <details open><summary>Prompt Suggestions</summary>
+                <div class="prompt-suggestions" id="prompt-suggestions"></div>
+            </details>
+        </div>
+        <form class="input-form" id="chat-form">
+            <textarea id="topicInput" rows="1" placeholder="Ask a question..."></textarea>
+            <button id="askButton" type="submit" aria-label="Send"><i class="fas fa-arrow-up"></i></button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

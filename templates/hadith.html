@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Hadith Sources{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search Hadith sources...">
+    </div>
+    <div class="dictionary-content" id="dictionary-content">
+        <div id="noResultsMessage" class="no-results-message" style="display: none;"></div>
+        {% for source in sources %}
+        <a href="{{ url_for('hadith_chapters_page', source_slug=source.source_slug) }}" class="list-card">
+            <h3>{{ source.source }}</h3>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/hadith_search.js') }}"></script>
+{% endblock %}

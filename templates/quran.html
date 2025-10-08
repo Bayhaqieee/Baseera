@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Quran Dictionary{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search by Surah name or number...">
+        <div id="searchError" class="search-error-message"></div>
+    </div>
+    <div class="dictionary-content" id="dictionary-content">
+        <div id="noResultsMessage" class="no-results-message"></div>
+        {% for surah in quran_data %}
+        <a href="{{ url_for('quran_detail_page', surah_id=surah.nomor) }}" class="list-card quran-list-card" data-surah-number="{{ surah.nomor }}">
+            <div class="quran-list-header">
+                <span class="chapter-number">{{ surah.nomor }}</span>
+                <div class="surah-info">
+                    <h3>{{ surah.namaLatin }}</h3>
+                    <span class="revelation-place">{{ surah.tempatTurun }}</span>
+                </div>
+            </div>
+            <span class="arabic-surah-name">{{ surah.nama }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quran_search.js') }}"></script>
+{% endblock %}

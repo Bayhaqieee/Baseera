@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - {{ source_name }}{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="breadcrumbs">
+        <a href="{{ url_for('hadith_page') }}">Hadith</a> &gt;
+        <span>{{ source_name }}</span>
+    </div>
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search chapters...">
+    </div>
+    <div class="dictionary-content" id="dictionary-content">
+        <div id="noResultsMessage" class="no-results-message" style="display: none;"></div>
+        {% for chapter in chapters %}
+        <a href="{{ url_for('hadith_list_page', source_slug=source_slug, chapter_slug=chapter.chapter_slug) }}" class="list-card">
+            <div class="chapter-card-header">
+                <span class="chapter-number">{{ chapter.chapter_number }}</span>
+                <h3>{{ chapter.chapter }}</h3>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/hadith_search.js') }}"></script>
+{% endblock %}

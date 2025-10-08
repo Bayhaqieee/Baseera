@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}BaseeraAI - Tebak Ayat{% endblock %}
+{% block content %}
+<div class="dictionary-container">
+    <div class="dictionary-content" id="dictionary-content">
+        
+        <div class="game-container" id="gameInterface">
+            <div class="game-progress">
+                Soal <span id="currentQuestionNum">1</span> dari <span id="totalQuestionNum">-</span>
+            </div>
+
+            <div class="question-box">
+                <div class="audio-trigger" id="playQuestionAudio">
+                    <i class="fas fa-play"></i>
+                </div>
+                <p style="color: var(--text-secondary);">Klik tombol untuk memutar ayat</p>
+                <audio id="gameAudioPlayer" style="display: none;"></audio>
+            </div>
+
+            <div class="options-grid" id="optionsGrid">
+                </div>
+        </div>
+
+        <div class="game-container" id="gameOverScreen" style="display: none;">
+            <div class="game-over-card">
+                <h2>Permainan Selesai!</h2>
+                <p>Skor Anda:</p>
+                <div class="score-display" id="finalScore">0/0</div>
+                <div class="modal-actions">
+                    <a href="{{ url_for('game_page') }}" class="modal-btn secondary">Menu Utama</a>
+                    <button id="playAgainBtn" class="modal-btn primary">Main Lagi</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}
