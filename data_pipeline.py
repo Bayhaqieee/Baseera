@@ -1,6 +1,6 @@
 import os
 from langchain_community.document_loaders import CSVLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters.character import RecursiveCharacterTextSplitter
 import kaggle
 import pandas as pd
 import re

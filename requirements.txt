@@ -3,6 +3,7 @@ crewai-tools
 langchain
 langchain-community
 langchain-openai
+langchain-text-splitters
 pymilvus
 pandas
 flask
