@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # --- FLASK APP ---
+# --- FLASK APP ---
   baseera-app:
     build: .
     container_name: baseera-app
@@ -18,8 +18,9 @@ services:
       - milvus-standalone
       - searxng
     volumes:
-      - ./datasets:/app/datasets # Persist datasets
-      - ./volumes/app_data:/app/volumes # Persist other data
+      - ./datasets:/app/datasets
+      - ./volumes/app_data:/app/volumes
+      - ./kaggle.json:/root/.kaggle/kaggle.json
 
   # --- MILVUS SERVICES ---
   etcd:
