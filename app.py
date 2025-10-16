@@ -39,7 +39,7 @@ def get_token_count(text):
 def check_rate_limit(ip_address, input_text):
     """
     Checks if the IP has enough quota for the input text.
-    Returns (allowed: bool, message: str)
+    Returns (allowed: bool, used: int, requested: int)
     """
     current_time = time.time()
     
@@ -58,14 +58,15 @@ def check_rate_limit(ip_address, input_text):
     
     # Check if limit would be exceeded
     if usage_record['tokens_used'] + request_tokens > DAILY_TOKEN_LIMIT:
-        remaining = max(0, DAILY_TOKEN_LIMIT - usage_record['tokens_used'])
-        return False, f"Daily token limit exceeded. You have {remaining} tokens left, but this request requires {request_tokens}."
+        # UPDATED: Return 3 values to match the unpacking in ask_question
+        return False, usage_record['tokens_used'], request_tokens
     
     # Update usage
     usage_record['tokens_used'] += request_tokens
     ip_token_usage[ip_address] = usage_record
     
-    return True, None
+    # UPDATED: Return 3 values
+    return True, usage_record['tokens_used'], request_tokens
 
 # --- Qari Data ---
 QARI_LIST = {
@@ -355,7 +356,10 @@ def ask_question():
     # RATE LIMIT CHECK
     topic = request.json.get('topic', '')
     ip = request.remote_addr
+    
+    # FIXED: Now unpacking exactly 3 values from the updated function
     is_allowed, used, requested = check_rate_limit(ip, topic)
+    
     if not is_allowed:
         return jsonify({
             "status": "error", 

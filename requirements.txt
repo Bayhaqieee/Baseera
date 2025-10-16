@@ -1,3 +1,5 @@
+crewai[azure]
+crewai[azure-ai-inference]
 crewai
 crewai-tools
 langchain
@@ -15,3 +17,4 @@ beautifulsoup4
 requests
 markupsafe
 tiktoken
+flask-cors

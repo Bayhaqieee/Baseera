@@ -1,0 +1,9 @@
+# Ignore data directories (they are mounted via volumes anyway)
+datasets
+volumes
+
+# Ignore git and cache
+.git
+__pycache__
+*.pyc
+.env

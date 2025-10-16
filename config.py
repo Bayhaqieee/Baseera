@@ -16,7 +16,7 @@ WIKIPEDIA_LANG = os.getenv("WIKIPEDIA_LANG", "en")
 SEARXNG_ENGINES = os.getenv("SEARXNG_ENGINES", "google,bing,duckduckgo,wikipedia")
 
 # Milvus Configuration
-MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
+MILVUS_HOST = os.getenv("MILVUS_HOST", "milvus-standalone")
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 QURAN_COLLECTION = os.getenv("MILVUS_QURAN_COLLECTION")
 HADITH_COLLECTION = os.getenv("MILVUS_HADITH_COLLECTION")
