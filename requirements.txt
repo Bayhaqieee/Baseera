@@ -5,6 +5,8 @@ crewai-tools
 langchain
 langchain-community
 langchain-openai
+langchain-groq
+openai
 langchain-text-splitters
 pymilvus
 pandas

@@ -1,8 +1,10 @@
+import os
 from crewai import Agent, Task, Crew, Process
 from crewai.tools import BaseTool
 from langchain_openai import AzureChatOpenAI
+from langchain_groq import ChatGroq
 import config
-from search_tools import unified_search # Import the new unified search function
+from search_tools import unified_search
 
 class KnowledgeBaseTool(BaseTool):
     name: str = "Knowledge Base Search Tool"
@@ -35,6 +37,39 @@ class KnowledgeBaseTool(BaseTool):
             
         return context
 
+def create_hybrid_llm():
+    """
+    Creates a Dual-Engine LLM with Automatic Failover.
+    Priority is strictly determined by config.LLM_PROVIDER.
+    """
+    
+    # --- 1. Configure Azure ---
+    # Use the OpenAI/Azure parameter names so the client uses Azure endpoint (not public OpenAI)
+    azure_llm = AzureChatOpenAI(
+        deployment_name=config.AZURE_CHAT_DEPLOYMENT_NAME,
+        openai_api_base=config.AZURE_API_BASE,
+        openai_api_version=config.AZURE_API_VERSION,
+        openai_api_key=config.AZURE_API_KEY,
+        temperature=0.7,
+        max_retries=1
+    )
+
+    # --- 2. Configure Groq (Backup/Primary) ---
+    groq_llm = ChatGroq(
+        api_key=config.GROQ_API_KEY,
+        model_name=config.GROQ_MODEL_NAME,
+        temperature=0.7,
+        max_retries=1
+    )
+
+    # --- 3. Return Based on Priority ---
+    if config.LLM_PROVIDER == "groq":
+        print(f"--- [SYSTEM] Primary: Groq ({config.GROQ_MODEL_NAME}) | Backup: Azure ---")
+        return groq_llm.with_fallbacks([azure_llm])
+    else:
+        print(f"--- [SYSTEM] Primary: Azure ({config.AZURE_CHAT_DEPLOYMENT_NAME}) | Backup: Groq ---")
+        return azure_llm.with_fallbacks([groq_llm])
+
 def create_crew(quran_retriever, hadith_retriever):
     """Creates and configures the simplified two-agent crew."""
     
@@ -43,16 +78,10 @@ def create_crew(quran_retriever, hadith_retriever):
         hadith_retriever=hadith_retriever
     )
     
-    llm = AzureChatOpenAI(
-        azure_deployment=config.AZURE_CHAT_DEPLOYMENT_NAME,
-        api_key=config.AZURE_API_KEY,
-        azure_endpoint=config.AZURE_API_BASE,
-        api_version=config.AZURE_API_VERSION,
-        temperature=0.7,
-        model=f"azure/{config.AZURE_CHAT_DEPLOYMENT_NAME}"
-    )
+    # Get the Arranged LLM Chain
+    llm = create_hybrid_llm()
 
-    # Agent 1: The Researcher (gathers all info)
+    # Agent 1: The Researcher
     researcher = Agent(
         role='Comprehensive Islamic Researcher',
         goal='Gather all relevant information from both religious texts and the web to answer the user\'s query about {topic}.',
@@ -62,7 +91,7 @@ def create_crew(quran_retriever, hadith_retriever):
         verbose=True
     )
     
-    # Agent 2: The Synthesizer (builds the final JSON answer)
+    # Agent 2: The Synthesizer
     json_schema = """{
         "status": "ok" | "insufficient_data",
         "language": "en" | "id",
@@ -81,7 +110,7 @@ def create_crew(quran_retriever, hadith_retriever):
         verbose=True
     )
 
-    # Define Tasks for the simplified crew
+    # Define Tasks
     research_task = Task(
         description='Use your tool to conduct a comprehensive search on the user\'s topic: {topic}.',
         expected_output='A complete context block containing all relevant information from religious texts and web sources.',
@@ -99,7 +128,7 @@ def create_crew(quran_retriever, hadith_retriever):
         """,
         expected_output='A final, curated answer in a single valid JSON object based on the provided schema.',
         agent=synthesizer,
-        context=[research_task] # Only depends on the researcher's complete output
+        context=[research_task]
     )
 
     return Crew(agents=[researcher, synthesizer], tasks=[research_task, synthesis_task], process=Process.sequential, verbose=True)
