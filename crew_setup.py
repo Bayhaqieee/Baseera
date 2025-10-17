@@ -8,7 +8,7 @@ from search_tools import unified_search
 
 class KnowledgeBaseTool(BaseTool):
     name: str = "Knowledge Base Search Tool"
-    description: str = "Searches the complete knowledge base, including religious texts (Quran, Hadith) and the web (Wikipedia, SearxNG), for information relevant to a query."
+    description: str = "Searches the complete knowledge base (Quran, Hadith, Web) for information."
     quran_retriever: object
     hadith_retriever: object
 
@@ -17,11 +17,11 @@ class KnowledgeBaseTool(BaseTool):
         quran_results = self.quran_retriever.invoke(query)
         hadith_results = self.hadith_retriever.invoke(query)
         
-        # 2. Search the web using our unified search function
+        # 2. Search the web
         web_search_output = unified_search(query)
         web_results = web_search_output.get("web_results", [])
 
-        # 3. Combine all results into a single context string
+        # 3. Format Context
         context = "--- RELIGIOUS TEXTS ---\n"
         for doc in quran_results:
             context += f"Source: Quran\nContent: {doc.page_content}\n\n"
@@ -39,22 +39,28 @@ class KnowledgeBaseTool(BaseTool):
 
 def create_hybrid_llm():
     """
-    Creates a Dual-Engine LLM with Automatic Failover.
-    Priority is strictly determined by config.LLM_PROVIDER.
+    Creates a Failover LLM Chain (Single Object).
     """
     
-    # --- 1. Configure Azure ---
-    # Use the OpenAI/Azure parameter names so the client uses Azure endpoint (not public OpenAI)
+    # --- LITELLM CONFIGURATION (Crucial for Azure Fix) ---
+    # We map config vars to what LiteLLM expects internally
+    os.environ["AZURE_API_KEY"] = config.AZURE_API_KEY
+    os.environ["AZURE_API_BASE"] = config.AZURE_API_BASE
+    os.environ["AZURE_API_VERSION"] = config.AZURE_API_VERSION
+    
+    # 1. Azure Engine
+    # We pass model="azure/..." as per your reference to force proper routing
     azure_llm = AzureChatOpenAI(
-        deployment_name=config.AZURE_CHAT_DEPLOYMENT_NAME,
-        openai_api_base=config.AZURE_API_BASE,
-        openai_api_version=config.AZURE_API_VERSION,
-        openai_api_key=config.AZURE_API_KEY,
+        azure_deployment=config.AZURE_CHAT_DEPLOYMENT_NAME,
+        api_version=config.AZURE_API_VERSION,
+        azure_endpoint=config.AZURE_API_BASE,
+        api_key=config.AZURE_API_KEY,
+        model=f"azure/{config.AZURE_CHAT_DEPLOYMENT_NAME}",
         temperature=0.7,
         max_retries=1
     )
 
-    # --- 2. Configure Groq (Backup/Primary) ---
+    # 2. Groq Engine
     groq_llm = ChatGroq(
         api_key=config.GROQ_API_KEY,
         model_name=config.GROQ_MODEL_NAME,
@@ -62,73 +68,60 @@ def create_hybrid_llm():
         max_retries=1
     )
 
-    # --- 3. Return Based on Priority ---
+    # 3. Return based on Priority
     if config.LLM_PROVIDER == "groq":
-        print(f"--- [SYSTEM] Primary: Groq ({config.GROQ_MODEL_NAME}) | Backup: Azure ---")
+        print(f"--- [SYSTEM] Primary: Groq | Backup: Azure ---")
         return groq_llm.with_fallbacks([azure_llm])
     else:
-        print(f"--- [SYSTEM] Primary: Azure ({config.AZURE_CHAT_DEPLOYMENT_NAME}) | Backup: Groq ---")
+        print(f"--- [SYSTEM] Primary: Azure | Backup: Groq ---")
         return azure_llm.with_fallbacks([groq_llm])
 
 def create_crew(quran_retriever, hadith_retriever):
-    """Creates and configures the simplified two-agent crew."""
+    """
+    Creates a SINGLE AGENT Crew.
+    One Grandmaster agent handles Research -> Reasoning -> JSON Output.
+    """
     
     knowledge_base_tool = KnowledgeBaseTool(
         quran_retriever=quran_retriever, 
         hadith_retriever=hadith_retriever
     )
     
-    # Get the Arranged LLM Chain
     llm = create_hybrid_llm()
 
-    # Agent 1: The Researcher
-    researcher = Agent(
-        role='Comprehensive Islamic Researcher',
-        goal='Gather all relevant information from both religious texts and the web to answer the user\'s query about {topic}.',
-        backstory='An expert researcher skilled at querying both scriptural databases and online sources to build a complete picture of any given topic.',
+    # --- SINGLE AGENT: The Grandmaster ---
+    grandmaster = Agent(
+        role='Grandmaster Islamic Scholar & Tech Synthesizer',
+        goal='Provide a comprehensive, accurate answer to {topic} using religious and secular sources, strictly formatted as JSON.',
+        backstory='You are an elite AI Scholar capable of deep religious research and precise technical data formatting. You perform the search, analyze the data, and output the final JSON yourself.',
         tools=[knowledge_base_tool],
         llm=llm,
         verbose=True
     )
     
-    # Agent 2: The Synthesizer
+    # --- SINGLE TASK: Research & Format ---
     json_schema = """{
         "status": "ok" | "insufficient_data",
         "language": "en" | "id",
-        "answer": "Natural, helpful reply in user's language, summarizing all findings.",
-        "chain_of_thought": "Step-by-step reasoning based ONLY on the provided context from the researcher.",
-        "sources": ["List of key points or brief quotes from the RELIGIOUS TEXTS section."],
-        "web_sources": [{"title":"...", "url":"...", "snippet":"...", "provider":"wikipedia|searxng"}],
-        "follow_up_questions": ["Suggest 2-3 relevant follow-up questions."]
+        "answer": "Natural, helpful reply in user's language.",
+        "chain_of_thought": "Your reasoning process.",
+        "sources": ["List brief quotes from Quran/Hadith found."],
+        "web_sources": [{"title":"...", "url":"...", "snippet":"...", "provider":"..."}],
+        "follow_up_questions": ["Question 1", "Question 2"]
     }"""
 
-    synthesizer = Agent(
-        role='Expert Islamic QnA Synthesizer',
-        goal='Craft a comprehensive, balanced, and well-structured JSON answer to the user\'s query on {topic} using ONLY the context provided.',
-        backstory='A master communicator skilled at synthesizing complex religious and secular information into a clear, final JSON object. You never use tools, you only format the final answer.',
-        llm=llm,
-        verbose=True
-    )
-
-    # Define Tasks
-    research_task = Task(
-        description='Use your tool to conduct a comprehensive search on the user\'s topic: {topic}.',
-        expected_output='A complete context block containing all relevant information from religious texts and web sources.',
-        agent=researcher
-    )
-    
-    synthesis_task = Task(
+    master_task = Task(
         description=f"""
-        Analyze the complete context provided by the researcher.
-        Synthesize all information into a single, comprehensive answer that addresses the user's query on {{topic}}.
-        Your entire response MUST be a single, valid JSON object matching this exact schema. Do not add any other text or markdown formatting.
-        
-        JSON Schema:
+        1. RESEARCH: Use your tool to search for {topic}.
+        2. ANALYZE: Review the Quran, Hadith, and Web results provided by the tool.
+        3. SYNTHESIZE: Create a helpful answer based strictly on the findings.
+        4. FORMAT: Output the result as a VALID JSON object matching this schema:
         {json_schema}
+        
+        DO NOT output markdown blocks (```json). Just the raw JSON string.
         """,
-        expected_output='A final, curated answer in a single valid JSON object based on the provided schema.',
-        agent=synthesizer,
-        context=[research_task]
+        expected_output='A valid JSON string containing the research results.',
+        agent=grandmaster
     )
 
-    return Crew(agents=[researcher, synthesizer], tasks=[research_task, synthesis_task], process=Process.sequential, verbose=True)
+    return Crew(agents=[grandmaster], tasks=[master_task], process=Process.sequential, verbose=True)
