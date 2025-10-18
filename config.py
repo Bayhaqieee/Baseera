@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Priority Selection: 'azure' or 'groq'
+# Priority Selection: Defaults to 'groq' so it goes first.
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower().strip()
 
 # Azure Credentials
