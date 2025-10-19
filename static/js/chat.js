@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Chat JS Loaded"); // Debugging line to ensure script runs
+    console.log("Chat JS Loaded"); 
 
     const chatForm = document.getElementById('chat-form');
     const topicInput = document.getElementById('topicInput');
@@ -8,27 +8,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const suggestionsWrapper = document.getElementById('prompt-suggestions-wrapper');
     const suggestionsContainer = document.getElementById('prompt-suggestions');
     
-    // SAFETY CHECK: Handle missing Showdown library gracefully
     let converter;
     try {
         if (typeof showdown !== 'undefined') {
             converter = new showdown.Converter();
         } else {
-            console.warn("Showdown library not found. Markdown rendering disabled.");
-            converter = { makeHtml: (text) => text }; // Fallback to plain text
+            converter = { makeHtml: (text) => text };
         }
     } catch (e) {
-        console.error("Error initializing converter:", e);
         converter = { makeHtml: (text) => text };
     }
 
     if (topicInput) {
         topicInput.addEventListener('input', () => {
             topicInput.style.height = 'auto';
-            topicInput.style.height = `${topicInput.scrollHeight}px`;
+            topicInput.style.height = `${Math.min(topicInput.scrollHeight, 150)}px`;
         });
         
-        // Prevent "Enter" key from submitting form blindly
         topicInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -39,17 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (chatForm) {
         chatForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // CRITICAL: Stop page reload
+            e.preventDefault(); 
             askQuestion();
         });
-    } else {
-        console.error("Chat form element not found!");
     }
     
-    // EXTRA SAFETY: Catch button clicks directly
     if (askButton) {
         askButton.addEventListener('click', (e) => {
-            e.preventDefault(); // CRITICAL: Stop page reload
+            e.preventDefault(); 
             askQuestion();
         });
     }
@@ -83,17 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const loaderEl = document.getElementById(loaderId);
             if (loaderEl) loaderEl.remove();
             
-            // Check for network errors before parsing JSON
             if (!response.ok) {
-                 // Try to read error text if json fails
                  const text = await response.text();
-                 throw new Error(`Server Error: ${response.status} - ${text}`);
+                 throw new Error(`Server Error: ${response.status}`);
             }
 
             const data = await response.json();
 
             if (data.status === 'error') {
-                throw new Error(data.answer || data.error || 'An unknown error occurred.');
+                throw new Error(data.answer || 'An unknown error occurred.');
             }
             
             displayAiResponse(data);
@@ -110,41 +101,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayUserMessage(message) {
         if (!chatArea) return;
-        const userMessageHtml = `<div class="message-wrapper"><div class="message-header user-header">You</div><div class="message-content user">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div></div>`;
-        chatArea.insertAdjacentHTML('beforeend', userMessageHtml);
+        // User message: Just the bubble, right aligned
+        const html = `
+        <div class="message-row user">
+            <div class="message-bubble user">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+        </div>`;
+        chatArea.insertAdjacentHTML('beforeend', html);
         scrollToBottom();
     }
     
     function displayLoader(id) {
         if (!chatArea) return;
-        const loaderHtml = `<div class="message-wrapper" id="${id}"><div class="message-header ai-header"><i class="fas fa-robot"></i> AI Team</div><div class="loader-wrapper"><i class="fas fa-spinner fa-spin"></i> Thinking...</div></div>`;
-        chatArea.insertAdjacentHTML('beforeend', loaderHtml);
+        // Loader: Avatar + Thinking text
+        const html = `
+        <div class="message-row ai" id="${id}">
+            <div class="avatar ai"><i class="fas fa-robot"></i></div>
+            <div class="message-bubble ai">
+                <div class="loader-wrapper">
+                    <i class="fas fa-spinner fa-spin"></i> Thinking...
+                </div>
+            </div>
+        </div>`;
+        chatArea.insertAdjacentHTML('beforeend', html);
         scrollToBottom();
     }
 
     function displayErrorMessage(errorMsg) {
         if (!chatArea) return;
-        const errorHtml = `<div class="message-wrapper"><div class="message-header ai-header"><i class="fas fa-robot"></i> AI Team</div><div class="ai-response"><p style="color:#e57373;">Error: ${errorMsg}</p></div></div>`;
-        chatArea.insertAdjacentHTML('beforeend', errorHtml);
+        const html = `
+        <div class="message-row ai">
+            <div class="avatar ai"><i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i></div>
+            <div class="message-bubble ai">
+                <p style="color:#e57373;">Error: ${errorMsg}</p>
+            </div>
+        </div>`;
+        chatArea.insertAdjacentHTML('beforeend', html);
         scrollToBottom();
     }
 
     function displayAiResponse(data) {
         if (!chatArea) return;
-        const thinkingHtml = (data.chain_of_thought) ? `<div class="thinking-dropdown"><details><summary>Show thinking <i class="fas fa-chevron-down icon"></i></summary><div class="thinking-dropdown-content">${data.chain_of_thought}</div></details></div>` : '';
         
-        const sourcesHtml = (data.sources && data.sources.length > 0) ? `<div class="sources-quote">${data.sources.map(s => `<p>“${s}”</p>`).join('')}</div>` : '';
+        let contentHtml = '';
 
-        const answerHtml = data.answer ? `<div class="answer">${converter.makeHtml(data.answer)}</div>` : '<div class="answer"><p>No answer provided.</p></div>';
-
-        let webSourcesHtml = '';
-        if (data.web_sources && data.web_sources.length > 0) {
-            webSourcesHtml = `<div class="web-sources-container"><div class="web-sources-header"><i class="fas fa-globe"></i> Sources</div><div class="web-sources-grid">${data.web_sources.map(ws => `<a href="${ws.url}" target="_blank" class="web-source-card">${ws.title}</a>`).join('')}</div></div>`;
+        // 1. Thinking Process (Optional)
+        if (data.chain_of_thought) {
+            contentHtml += `
+            <div class="thinking-dropdown">
+                <details>
+                    <summary>Thinking Process <i class="fas fa-chevron-down icon"></i></summary>
+                    <div class="thinking-dropdown-content">${data.chain_of_thought}</div>
+                </details>
+            </div>`;
         }
 
-        const responseHtml = `<div class="message-wrapper"><div class="message-header ai-header"><i class="fas fa-robot"></i> AI Team</div><div class="ai-response">${thinkingHtml}${sourcesHtml}${answerHtml}${webSourcesHtml}</div></div>`;
-        chatArea.insertAdjacentHTML('beforeend', responseHtml);
+        // 2. Religious Sources Quote (Optional)
+        if (data.sources && data.sources.length > 0) {
+            contentHtml += `<div class="sources-quote">${data.sources.map(s => `<p>“${s}”</p>`).join('')}</div>`;
+        }
 
+        // 3. The Main Answer
+        const answerText = data.answer ? converter.makeHtml(data.answer) : '<p>No answer provided.</p>';
+        contentHtml += `<div class="ai-answer">${answerText}</div>`;
+
+        // 4. Web Sources (Optional)
+        if (data.web_sources && data.web_sources.length > 0) {
+            const sourcesList = data.web_sources.map(ws => 
+                `<a href="${ws.url}" target="_blank" class="web-source-card">${ws.title}</a>`
+            ).join('');
+            
+            contentHtml += `
+            <div class="web-sources-container">
+                <div class="web-sources-grid">${sourcesList}</div>
+            </div>`;
+        }
+
+        const html = `
+        <div class="message-row ai">
+            <div class="avatar ai"><i class="fas fa-robot"></i></div>
+            <div class="message-bubble ai">
+                <div class="ai-response-content">${contentHtml}</div>
+            </div>
+        </div>`;
+
+        chatArea.insertAdjacentHTML('beforeend', html);
+
+        // 5. Follow-up Suggestions
         if (data.follow_up_questions && data.follow_up_questions.length > 0 && suggestionsWrapper && suggestionsContainer) {
             suggestionsWrapper.style.display = 'block';
             suggestionsContainer.innerHTML = '';
@@ -161,6 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function scrollToBottom() {
-        if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+        if (chatArea) {
+            // Smooth scroll to bottom
+            chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: 'smooth' });
+        }
     }
 });
