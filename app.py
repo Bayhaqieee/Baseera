@@ -355,7 +355,12 @@ def generate_game_data():
 def ask_question():
     # RATE LIMIT CHECK
     topic = request.json.get('topic', '')
-    ip = request.remote_addr
+    
+    # FIX: Get the Real User IP forwarded by Nginx
+    if request.headers.get('X-Forwarded-For'):
+        ip = request.headers.get('X-Forwarded-For').split(',')[0]
+    else:
+        ip = request.headers.get('X-Real-IP', request.remote_addr)
     
     # FIXED: Now unpacking exactly 3 values from the updated function
     is_allowed, used, requested = check_rate_limit(ip, topic)

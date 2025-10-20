@@ -141,7 +141,7 @@ def create_crew(quran_retriever, hadith_retriever):
             "language": "en" | "id",
             "answer": "A helpful, natural language answer based on the search results.",
             "chain_of_thought": "Brief explanation of your reasoning.",
-            "sources": ["List brief quotes/citations from Quran/Hadith found."],
+            "sources": ["List of quotes/citations from Quran/Hadith found."],
             "web_sources": [{{"title": "...", "url": "...", "snippet": "...", "provider": "..."}}],
             "follow_up_questions": ["Question 1", "Question 2"]
         }}
